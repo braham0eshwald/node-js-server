@@ -1,24 +1,36 @@
 import { getKnex } from "../../knex.js";
 
-const knex = await getKnex();
-
 class MessageModel {
   async sendMessage(chat_id, user_id, content) {
-    return await knex("messages")
+    const knex = await getKnex();
+    const [message] = await knex("messages")
       .insert({ chat_id, user_id, content })
       .returning("*");
+    return message;
   }
-  async getMessages(chat_id) {
+
+  async getMessages(chat_id, limit = 100, offset = 0) {
+    const knex = await getKnex();
     return await knex("messages")
       .where("chat_id", chat_id)
       .orderBy("created_at", "desc")
-      .limit(100);
+      .limit(limit)
+      .offset(offset);
   }
+
   async deleteMessage(id, user_id) {
-    return await knex("messages").where({ id, user_id }).del();
+    const knex = await getKnex();
+    const rowsDeleted = await knex("messages").where({ id, user_id }).del();
+    return rowsDeleted;
   }
+
   async changeMessage(id, user_id, content) {
-    return await knex("messages").where({ id, user_id }).update({ content });
+    const knex = await getKnex();
+    const [updatedMessage] = await knex("messages")
+      .where({ id, user_id })
+      .update({ content })
+      .returning("*");
+    return updatedMessage;
   }
 }
 

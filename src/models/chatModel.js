@@ -1,34 +1,59 @@
 import { getKnex } from "../../knex.js";
-const knex = await getKnex();
 
 class ChatModel {
   async createChat(chat_name) {
-    return await knex("chats").insert({ chat_name }).returning("*");
+    const knex = await getKnex();
+    const [chat] = await knex("chats").insert({ chat_name }).returning("*");
+    return chat;
   }
+
   async addUser(chat_id, user_id) {
-    return await knex("chats_users").insert({ user_id, chat_id });
+    const knex = await getKnex();
+    const [chatUser] = await knex("chats_users")
+      .insert({ user_id, chat_id })
+      .returning("*");
+    return chatUser;
   }
+
   async ifChatExists(chat_name) {
-    const res = await knex("chats").where("chat_name", chat_name).first();
-    return res ? true : false;
+    const knex = await getKnex();
+    return knex("chats").where("chat_name", chat_name).first();
   }
+
   async getChatById(id) {
-    return await knex("chats").where("id", id).returning("*");
+    const knex = await getKnex();
+    return knex("chats").where("id", id).first();
   }
+
   async getChatUsers(id) {
-    return await knex("chats_users").where("chat_id", id).returning("*");
+    const knex = await getKnex();
+    return knex("chats_users")
+      .join("users", "chats_users.user_id", "=", "users.id")
+      .where("chats_users.chat_id", id)
+      .select("users.username", "users.email", "users.id");
   }
+
   async deleteFromChat(chat_id, user_id) {
-    return await knex("chats_users")
+    const knex = await getKnex();
+    const rowsDeleted = await knex("chats_users")
       .where("chat_id", chat_id)
       .andWhere("user_id", user_id)
       .del();
+    return rowsDeleted;
   }
-  async usersChats(id) {
-    return await knex("chats_users").where("user_id", +id).returning("*");
+
+  async usersChats(user_id) {
+    const knex = await getKnex();
+    return knex("chats_users")
+      .join("chats", "chats_users.chat_id", "=", "chats.id")
+      .where("chats_users.user_id", user_id)
+      .select("chats.id", "chats.chat_name");
   }
+
   async deleteChat(id) {
-    return await knex("chats").where("id", id).del();
+    const knex = await getKnex();
+    const rowsDeleted = await knex("chats").where("id", id).del();
+    return rowsDeleted;
   }
 }
 

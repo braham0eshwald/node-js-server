@@ -1,28 +1,42 @@
 import { getKnex } from "../../knex.js";
-const knex = await getKnex();
+import bcrypt from "bcryptjs";
 
 class UserModel {
   async userByUserName(username) {
+    const knex = await getKnex();
     return await knex("users").where("username", username).first();
   }
-  async userByID(id) {
-    return await knex("users").where("id", +id).first();
+
+  async userByEmail(email) {
+    const knex = await getKnex();
+    return await knex("users").where("email", email).first();
   }
+
+  async userByID(id) {
+    const knex = await getKnex();
+    return await knex("users").where("id", id).first();
+  }
+
   async getAllUsers() {
+    const knex = await getKnex();
     return await knex("users").select("*");
   }
-  async createUser(username, email, paswd) {
-    return await knex("users")
-      .insert({ username, email, paswd })
+
+  async createUser(username, email, password) {
+    const knex = await getKnex();
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const [user] = await knex("users")
+      .insert({ username, email, paswd: hashedPassword })
       .returning("*");
+    return user;
   }
+
   async ifExists(username, email) {
-    const Nusername = await knex("users").where("username", username).first();
-    const Nemail = await knex("users").where("email", email).first();
-    if (Nusername || Nemail) {
-      return true;
-    }
-    return false;
+    const knex = await getKnex();
+    return await knex("users")
+      .where("username", username)
+      .orWhere("email", email)
+      .first();
   }
 }
 
